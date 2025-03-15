@@ -4,11 +4,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
+# Configuración de la ventana principal
 class AdalineGUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Clasificador ADALINE")
-
         # Inicializar variables: puntos, pesos y tasa de aprendizaje
         self.points = []  # Lista para almacenar puntos y su clase (1 o -1)
         self.weights = np.random.uniform(-1, 1, 3)  # Pesos aleatorios iniciales (w1, w2, bias)
@@ -30,6 +30,8 @@ class AdalineGUI(tk.Tk):
         # Agregar gráfico a la interfaz
         self.canvas = FigureCanvasTkAgg(self.figure, master=self)
         self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=1)
+
+        # Vincular clic del ratón para agregar puntos
         self.canvas.mpl_connect('button_press_event', self.add_point)
 
         # Crear botón para avanzar época
@@ -47,13 +49,10 @@ class AdalineGUI(tk.Tk):
         self.bias_label = tk.Label(self.weights_frame, text=f"Bias w0: {self.weights[2]:.2f}")
         self.bias_label.grid(row=2, column=0)
 
-        # Inicializar las referencias a las líneas y contornos
-        self.decision_line = None
-        self.decision_contour = None
-
         # Manejo de cierre
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
+    # Marcar puntos en el hiperplano
     def add_point(self, event):
         if event.inaxes:
             x, y = round(event.xdata), round(event.ydata)
@@ -66,38 +65,31 @@ class AdalineGUI(tk.Tk):
                 self.ax.plot(x, y, 'ro', markersize=12)  # Punto rojo
             self.canvas.draw()
 
+    # Algoritmo ADALINE para avanzar en la época
     def advance_epoch(self):
         if not self.points:
             messagebox.showwarning("Advertencia", "No hay puntos en el plano.")
             return
-
         total_error = 0
         # Recorrer cada punto y aplicar el algoritmo ADALINE
         for x, y, label in self.points:
             input_vector = np.array([x, y, 1])  # Añadir bias como entrada constante (1)
-            prediction = np.dot(self.weights, input_vector)  # Salida lineal del ADALINE
+            prediction = np.dot(self.weights, input_vector)  # Salida lineal
             error = label - prediction  # Calcular el error
             self.weights += self.learning_rate * error * input_vector  # Ajustar pesos
-            total_error += error ** 2  # Sumar el error cuadrático
-
-        # Eliminar la línea de decisión y contornos anteriores si existen
-        if self.decision_line:
-            self.decision_line.remove()
-        if self.decision_contour:
-            self.decision_contour.remove()
-
+            # Sumar el error cuadrático
+            total_error += error ** 2
         # Dibujar el plano con el contorno degradado
         self.draw_decision_boundary()
-
         # Dibujar puntos nuevamente
         for x, y, label in self.points:
             color = 'ro' if label == 1 else 'bo'
             self.ax.plot(x, y, color, markersize=12)
-
         # Dibujar el hiperplano actualizado
         x_vals = np.array(self.ax.get_xlim())
         y_vals = - (self.weights[0] / self.weights[1]) * x_vals - (self.weights[2] / self.weights[1])
-        self.decision_line, = self.ax.plot(x_vals, y_vals, 'g--')  # Línea verde discontinua
+        self.ax.plot(x_vals, y_vals, 'g--')  # Línea verde discontinua
+        self.canvas.draw()
 
         # Actualizar etiquetas con los nuevos valores de pesos y bias (con dos decimales)
         self.w1_label.config(text=f"Peso w1: {self.weights[0]:.2f}")
@@ -109,21 +101,19 @@ class AdalineGUI(tk.Tk):
         print(f"Época {self.epoch + 1}, Error cuadrático medio: {mse:.4f}")
         self.epoch += 1
 
-        self.canvas.draw()
-
+    # Función para dibujar el contorno degradado de clasificación
     def draw_decision_boundary(self):
         # Crear una cuadrícula de puntos
         x_min, x_max = -10, 10
         y_min, y_max = -10, 10
         xx, yy = np.meshgrid(np.linspace(x_min, x_max, 200), np.linspace(y_min, y_max, 200))
-        
         # Calcular la salida para cada punto en la cuadrícula
         Z = self.weights[0] * xx + self.weights[1] * yy + self.weights[2]
         Z = np.tanh(Z)  # Usar tangente hiperbólica para suavizar
-
         # Dibujar el contorno degradado
-        self.decision_contour = self.ax.contourf(xx, yy, Z, levels=50, cmap='coolwarm', alpha=0.3)
+        self.ax.contourf(xx, yy, Z, levels=50, cmap='coolwarm', alpha=0.3)
 
+    # Cerrar figura y ventana
     def on_closing(self):
         plt.close(self.figure)
         self.destroy()
