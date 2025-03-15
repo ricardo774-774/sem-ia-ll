@@ -30,19 +30,20 @@ class RegressionApp:
         self.root = root
         self.root.title("Regresión Lineal con ADALINE")
         self.points = []
+        self.regression_line = None  # Variable para almacenar la línea de regresión
 
         # Crear la figura y el eje de matplotlib
         self.fig = Figure(figsize=(5, 5), dpi=100)
         self.ax = self.fig.add_subplot(111)
-        self.ax.set_xlim(-10, 10)  # Límites de -10 a 10 para mostrar los 4 cuadrantes completos
+        self.ax.set_xlim(-10, 10)
         self.ax.set_ylim(-10, 10)
         self.ax.set_title("Plano Cartesiano")
         self.ax.set_xlabel("X")
         self.ax.set_ylabel("Y")
 
         # Agregar líneas para los ejes X e Y
-        self.ax.axhline(0, color='black', linewidth=0.5)  # Eje X
-        self.ax.axvline(0, color='black', linewidth=0.5)  # Eje Y
+        self.ax.axhline(0, color='black', linewidth=0.5)
+        self.ax.axvline(0, color='black', linewidth=0.5)
 
         # Incrustar la figura en Tkinter
         self.canvas = FigureCanvasTkAgg(self.fig, master=root)
@@ -65,10 +66,10 @@ class RegressionApp:
         if len(self.points) < 2:
             print("Se necesitan al menos dos puntos para realizar la regresión lineal.")
             return
-        
+
         X = np.array([[p[0]] for p in self.points])
         y = np.array([p[1] for p in self.points])
-        
+
         adaline = Adaline(learning_rate=0.001, epochs=10000)
         adaline.fit(X, y)
 
@@ -76,8 +77,14 @@ class RegressionApp:
         X_plot = np.linspace(-10, 10, 100).reshape(-1, 1)
         y_pred = adaline.predict(X_plot)
 
-        # Dibujar la línea de regresión
-        self.ax.plot(X_plot, y_pred, 'r-', label='Línea de regresión')
+        # Eliminar la línea anterior si existe
+        if self.regression_line:
+            self.regression_line.remove()
+
+        # Dibujar la nueva línea de regresión y guardarla
+        self.regression_line, = self.ax.plot(X_plot, y_pred, 'r-', label='Línea de regresión')
+
+        # Asegurar que la leyenda no se duplique
         self.ax.legend()
         self.canvas.draw()
 
