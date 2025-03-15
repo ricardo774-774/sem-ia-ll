@@ -47,6 +47,10 @@ class AdalineGUI(tk.Tk):
         self.bias_label = tk.Label(self.weights_frame, text=f"Bias w0: {self.weights[2]:.2f}")
         self.bias_label.grid(row=2, column=0)
 
+        # Inicializar las referencias a las líneas y contornos
+        self.decision_line = None
+        self.decision_contour = None
+
         # Manejo de cierre
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
@@ -76,6 +80,12 @@ class AdalineGUI(tk.Tk):
             self.weights += self.learning_rate * error * input_vector  # Ajustar pesos
             total_error += error ** 2  # Sumar el error cuadrático
 
+        # Eliminar la línea de decisión y contornos anteriores si existen
+        if self.decision_line:
+            self.decision_line.remove()
+        if self.decision_contour:
+            self.decision_contour.remove()
+
         # Dibujar el plano con el contorno degradado
         self.draw_decision_boundary()
 
@@ -87,8 +97,7 @@ class AdalineGUI(tk.Tk):
         # Dibujar el hiperplano actualizado
         x_vals = np.array(self.ax.get_xlim())
         y_vals = - (self.weights[0] / self.weights[1]) * x_vals - (self.weights[2] / self.weights[1])
-        self.ax.plot(x_vals, y_vals, 'g--')  # Línea verde discontinua
-        self.canvas.draw()
+        self.decision_line, = self.ax.plot(x_vals, y_vals, 'g--')  # Línea verde discontinua
 
         # Actualizar etiquetas con los nuevos valores de pesos y bias (con dos decimales)
         self.w1_label.config(text=f"Peso w1: {self.weights[0]:.2f}")
@@ -99,6 +108,8 @@ class AdalineGUI(tk.Tk):
         mse = total_error / len(self.points)
         print(f"Época {self.epoch + 1}, Error cuadrático medio: {mse:.4f}")
         self.epoch += 1
+
+        self.canvas.draw()
 
     def draw_decision_boundary(self):
         # Crear una cuadrícula de puntos
@@ -111,7 +122,7 @@ class AdalineGUI(tk.Tk):
         Z = np.tanh(Z)  # Usar tangente hiperbólica para suavizar
 
         # Dibujar el contorno degradado
-        self.ax.contourf(xx, yy, Z, levels=50, cmap='coolwarm', alpha=0.3)
+        self.decision_contour = self.ax.contourf(xx, yy, Z, levels=50, cmap='coolwarm', alpha=0.3)
 
     def on_closing(self):
         plt.close(self.figure)
